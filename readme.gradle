@@ -1,0 +1,10 @@
+
+task generateReadme(type: TransformTask) {
+  generateCode.dependsOn it
+
+  template = file('readme.template.md')
+  output = file('readme.md')
+
+  inputs.file(rootProject.file("gradle.properties"))
+  inputs.file(file("build.gradle"))
+}

@@ -1,0 +1,141 @@
+gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS
+
+buildscript {
+  repositories {
+    mavenCentral()
+    jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+
+    classpath "com.satori:satori-libs-gradle-utils:$composerVersion"
+    classpath "com.satori:satori-libs-gradle-docker:$composerVersion"
+    classpath "com.satori:satori-libs-gradle-transform:$composerVersion"
+    classpath "com.satori:satori-libs-gradle-codegen:$composerVersion"
+    classpath "com.satori:satori-gradle-composer-plugin:$composerVersion"
+  }
+}
+
+apply plugin: 'idea'
+
+group group
+version version
+buildDir = '.out'
+
+idea {
+  project {
+    jdkName = JavaVersion.VERSION_1_8.toString()
+    languageLevel = JavaVersion.VERSION_1_8.toString()
+  }
+  module {
+    inheritOutputDirs = false
+    outputDir = file("$buildDir/idea")
+    testOutputDir = file("$buildDir/idea-tests")
+  }
+}
+
+ext {
+  pckg = "$group.${name.replaceAll(~/[^\w]+/,".")}"
+  pckgDir = pckg.replace('.', '/')
+}
+
+apply plugin: 'java'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+//archivesBaseName = (path - ~/^[^\w]+/).replaceAll(~/[^\w]+/, "-")
+
+sourceSets.main.java.srcDirs = ['src']
+sourceSets.main.resources.srcDirs = ['res']
+sourceSets.test.java.srcDirs = ['tests/src']
+sourceSets.test.resources.srcDirs = ['tests/res']
+
+compileJava.options.compilerArgs << "-Xlint:unchecked"
+compileJava.options.compilerArgs << "-Xlint:deprecation"
+
+apply plugin: 'kotlin'
+
+kotlin {
+  experimental {
+    coroutines 'enable'
+  }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+  kotlinOptions {
+    jvmTarget = JavaVersion.VERSION_1_8
+  }
+}
+
+sourceSets.main.kotlin.srcDirs = []
+sourceSets.test.kotlin.srcDirs = []
+
+
+sourceSets.all { sourceSet ->
+  def n = sourceSet.name
+  n = n != "main" ? n.capitalize() : ""
+  def taskName = "generate${n}Code"
+  logger.lifecycle("defining task: '{}:{}'", project.name, taskName)
+  def t = task "generate${n}Code"() {
+    group 'codegen'
+  }
+  tasks["compile${n}Java"].dependsOn t
+  tasks["compile${n}Kotlin"].dependsOn t
+}
+
+apply plugin: 'com.satori.docker'
+apply plugin: 'com.satori.transform'
+apply from: rootProject.file('readme.gradle')
+
+task createDefaultProjectStructure {
+  group "codegen"
+  doLast {
+    // create directories for all source sets
+    def pckgDir = pckg.replaceAll(~/[^\w]+/, "/")
+    sourceSets.forEach { sourceSet ->
+      sourceSet.java.srcDirs.forEach {
+        def pathToCreate = new File(it, pckgDir)
+        logger.lifecycle("creating sources path for '{}': '{}'", sourceSet.name, pathToCreate)
+        pathToCreate.mkdirs()
+      }
+      sourceSet.kotlin.srcDirs.forEach {
+        def pathToCreate = new File(it, pckgDir)
+        logger.lifecycle("creating sources path for '{}': '{}'", sourceSet.name, pathToCreate)
+        pathToCreate.mkdirs()
+      }
+      sourceSet.resources.srcDirs.forEach {
+        def pathToCreate = new File(it, pckgDir)
+        logger.lifecycle("creating resources path for '{}': '{}'", sourceSet.name, pathToCreate)
+        pathToCreate.mkdirs()
+      }
+    }
+
+    // generate build.gradle
+    if (!file("build.gradle").exists()) {
+      logger.lifecycle("creating build.gadle: '{}'", file('build.gradle'))
+      transform {
+        template = rootProject.file('build.template.gradle')
+        output = file('build.gradle')
+      }
+    }
+  }
+}
+
+test {
+  testLogging {
+    events "STARTED", "PASSED", "SKIPPED", "FAILED", "STANDARD_OUT", "STANDARD_ERROR"
+  }
+}
+
+repositories {
+  mavenCentral()
+  maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+}
+
+// main dependencies
+dependencies {
+  compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+  compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
+}

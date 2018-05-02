@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "org.andreyko.vertx.grpc.test";
+option java_outer_classname = "GtfsLookupProto";
+package gtfs.lookup;
+
+service GtfsLookup {
+  rpc ping (PingRequest) returns (PingReply) {
+  }
+}
+
+message PingRequest {
+  string message = 1;
+}
+
+message PingReply {
+  string message = 1;
+}

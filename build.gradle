@@ -87,6 +87,7 @@ sourceSets.all { sourceSet ->
 
 apply plugin: 'com.satori.docker'
 apply plugin: 'com.satori.transform'
+apply plugin: 'com.satori.composer'
 apply from: rootProject.file('readme.gradle')
 
 task createDefaultProjectStructure {
@@ -123,6 +124,32 @@ task createDefaultProjectStructure {
   }
 }
 
+
+apply plugin: 'com.google.protobuf'
+sourceSets.main.proto.srcDirs = ['grpc']
+
+buildscript {
+  dependencies {
+    classpath 'com.google.protobuf:protobuf-gradle-plugin:+'
+  }
+}
+
+protobuf {
+  protoc {
+    artifact = 'com.google.protobuf:protoc:+'
+  }
+  plugins {
+    grpc {
+      artifact = "io.vertx:protoc-gen-grpc-java:+"
+    }
+  }
+  generateProtoTasks {
+    all()*.plugins {
+      grpc
+    }
+  }
+}
+
 test {
   testLogging {
     events "STARTED", "PASSED", "SKIPPED", "FAILED", "STANDARD_OUT", "STANDARD_ERROR"
@@ -138,4 +165,17 @@ repositories {
 dependencies {
   compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
   compile "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutinesVersion"
+
+  compile "com.google.protobuf:protobuf-java:$protobufVersion"
+  compile "io.grpc:grpc-core:$grpcVersion"
+  compile "io.grpc:grpc-stub:$grpcVersion"
+  compile "io.grpc:grpc-protobuf:$grpcVersion"
+  compile "io.grpc:grpc-netty:$grpcVersion"
+
+  compile "io.vertx:vertx-core:$vertxVersion"
+  compile "io.vertx:vertx-grpc:$vertxVersion"
+  
+  compile satoriLibsAsyncKotlin()
+  compile satoriLibsCommonKotlin()
+  compile satoriLibsVertxKotlin()
 }

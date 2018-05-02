@@ -1,4 +1,4 @@
 ## Project '${name}'
-version: v${version}
+version: ${version}
 
 //TODO: add description

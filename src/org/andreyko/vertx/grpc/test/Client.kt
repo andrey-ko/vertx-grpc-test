@@ -56,7 +56,7 @@ object Client {
     }
     
     val channel = VertxChannelBuilder
-      .forAddress(vertx, "localhost", 8080)
+      .forAddress(vertx, "localhost", 9090)
       .usePlaintext(true)
       .build()
     

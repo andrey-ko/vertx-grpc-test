@@ -69,8 +69,8 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
   }
 }
 
-sourceSets.main.kotlin.srcDirs = []
-sourceSets.test.kotlin.srcDirs = []
+sourceSets.main.kotlin.srcDirs = sourceSets.main.java.srcDirs
+sourceSets.test.kotlin.srcDirs = sourceSets.test.java.srcDirs
 
 
 sourceSets.all { sourceSet ->

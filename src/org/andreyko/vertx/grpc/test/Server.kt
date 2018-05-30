@@ -11,14 +11,7 @@ object Server {
   
   @JvmStatic
   fun main(vararg args: String) {
-    val service = object : GtfsLookupGrpc.GtfsLookupVertxImplBase() {
-      override fun ping(request: PingRequest, future: VxFuture<PingReply>) {
-        future.complete(PingReply.newBuilder().apply {
-          message = request.message
-        }.build())
-      }
-    }
-    
+    val service = GtfsLookupService()
     val vertx = Vertx.vertx(VertxOptions().apply {
       eventLoopPoolSize = 1
       addressResolverOptions = AddressResolverOptions().apply {
@@ -32,7 +25,7 @@ object Server {
     })
     
     val rpcServer = VertxServerBuilder
-      .forPort(vertx, 8080)
+      .forPort(vertx, 9090)
       .addService(service)
       .build()
     
